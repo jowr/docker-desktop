@@ -15,16 +15,23 @@
 #
 # Author: Roberto Gandolfo Hashioka
 # Date: 07/28/2013
+#
+# This is a Dockerfile that creates a docker image with all 
+# the necessary dependencies for OpenModelica. 
+# It is hevily inspired by Micheal Tiller's docker image 
+# see - https://github.com/xogeny/ModelicaBook/blob/master/docker/OM/Dockerfile
+# and by the docker-desktop images by Roberto Gandolfo Hashioka
+# see - https://github.com/rogaha/docker-desktop
+#
 
-
-FROM ubuntu:14.04
-MAINTAINER Roberto G. Hashioka "roberto_hashioka@hotmail.com"
-
-RUN apt-get update -y
-RUN apt-get upgrade -y
+FROM ubuntu
+MAINTAINER Jorrit Wronski (jowr@ipu.dk)
 
 # Set the env variable DEBIAN_FRONTEND to noninteractive
 ENV DEBIAN_FRONTEND noninteractive
+
+# Update index and install wget
+RUN apt-get update && apt-get install -y wget
 
 # Installing the environment required: xserver, xdm, flux box, roc-filer and ssh
 RUN apt-get install -y xpra rox-filer openssh-server pwgen xserver-xephyr xdm fluxbox xvfb sudo
@@ -63,3 +70,11 @@ ADD . /src
 EXPOSE 22
 # Start xdm and ssh services.
 CMD ["/bin/bash", "/src/startup.sh"]
+
+
+# Add OpenModelica stable build
+RUN for deb in deb deb-src; do echo "$deb http://build.openmodelica.org/apt `lsb_release -cs` stable"; done | sudo tee /etc/apt/sources.list.d/openmodelica.list
+RUN wget -q http://build.openmodelica.org/apt/openmodelica.asc -O- | sudo apt-key add -
+
+# Update index (again) and install OpenModelica
+RUN apt-get update && apt-get install -y openmodelica
